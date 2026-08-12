@@ -1,0 +1,29 @@
+sell_fractions: [0.0, 0.25, 0.5, 0.75, 1.0]
+hold_horizons: [3, 7, 15]
+risk_lambda: {cautious: 0.8, balanced: 0.45, aggressive: 0.2}
+default_risk_profile: balanced
+
+constraints:
+  max_spoilage_fraction: 0.15
+  wide_band_threshold: 0.35
+  min_viable_load_ratio: 0.25
+  near_mandi_km: 40
+  shock_override_magnitude: 3
+  shock_override_days: 3
+  confidence_floor: 0.5
+  confidence_floor_sell_fraction: 0.5
+
+confidence_weights:
+  band_tightness: 0.5
+  data_quality: 0.2
+  historical_hit_rate: 0.3
+  band_tightness_scale: 0.30
+
+explanation_templates:
+  arr_vs_ma30: "arrivals are {pct}% {direction} than normal"
+  days_to_festival: "{festival} demand starts in {n} days"
+  shock_active_bearish: "a policy announcement {n} days ago is pushing prices down"
+  shock_active_bullish: "a policy announcement {n} days ago is pushing prices up"
+  rain_forecast_7d: "heavy rain is expected in the next few days"
+  price_vs_nbr: "nearby markets are paying {pct}% more"
+  roll_std_30: "prices have been swinging a lot this month"

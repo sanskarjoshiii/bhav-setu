@@ -1,0 +1,50 @@
+# API endpoints, resource ids and CSV column mappings.
+# ⚠️ PHASE 2 MANUAL STEP: after downloading the Kaggle CSV, replace the values
+#    under csv_backfill.columns with the file's EXACT header names.
+
+agmarknet:
+  base_url: https://api.data.gov.in/resource
+  resource_id_env: AGMARKNET_RESOURCE_ID
+  api_key_env: DATA_GOV_IN_API_KEY
+  page_limit: 1000
+  filters:
+    state: Maharashtra
+    commodity: Onion
+  retry:
+    attempts: 5
+    backoff_seconds: [1, 2, 4, 8]
+
+csv_backfill:
+  path: data/raw/mandi_history.csv
+  chunk_size: 100000
+  # left  = our canonical field, right = column name in the source CSV
+  columns:
+    obs_date: Price Date
+    state: State
+    district: District
+    mandi: Market
+    commodity: Commodity
+    variety: Variety
+    grade: Grade
+    min_price: Min Price
+    max_price: Max Price
+    modal_price: Modal Price
+    arrival: Arrivals
+  units:
+    price: rupees_per_quintal      # rupees_per_quintal | rupees_per_kg
+    arrival: quintal               # quintal | tonne
+  date_format: "%d/%m/%Y"
+
+weather:
+  archive_url: https://archive-api.open-meteo.com/v1/archive
+  forecast_url: https://api.open-meteo.com/v1/forecast
+  daily_vars: [precipitation_sum, temperature_2m_max, temperature_2m_min]
+  forecast_days: 16
+
+routing:
+  osrm_url: http://router.project-osrm.org/route/v1/driving
+  haversine_fallback_factor: 1.3
+
+manual_files:
+  shock_events: data/manual/shock_events.csv
+  festivals: data/manual/festivals.csv

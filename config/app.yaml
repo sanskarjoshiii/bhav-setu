@@ -1,0 +1,12 @@
+horizons: [1, 3, 7, 15]
+quantiles: {p10: 0.10, p50: 0.50, p90: 0.90}
+top_k_mandis: 5
+max_distance_km: 150
+default_language: mr
+history_lookback_days: 400
+
+# cache TTLs in seconds
+cache_ttl:
+  forecast: 3600
+  mandi_list: 86400
+  transparency: 3600

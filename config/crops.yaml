@@ -1,0 +1,11 @@
+onion:
+  aliases: [Onion, "Onion Red", "Onion(Big)", "Onion Local", Kanda, कांदा]
+  crop_group: vegetable
+  perishability_class: 3
+  k_c: 0.006
+  shelf_life_days: 90
+  max_hold_days: 20
+  msp_applicable: false
+  seasons:
+    kharif: {harvest_start: "10-01", harvest_end: "12-15"}
+    rabi:   {harvest_start: "03-01", harvest_end: "05-15"}

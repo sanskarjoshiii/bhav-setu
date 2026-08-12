@@ -1,0 +1,9 @@
+# PHASE 2 MANUAL STEP: fill this with ~20 real onion policy events from the last 3 years.
+# event_type: export_ban | export_allowed | min_export_price | stock_limit | buffer_release | import_duty | strike
+# direction:  -1 = bearish for the farmer (prices fall), +1 = bullish (prices rise)
+# magnitude:  1 low | 2 medium | 3 high
+# decay_days: how long the effect plausibly persists; the feature builder uses tau = decay_days / 3
+# scope:      national | state:Maharashtra
+# Example row (delete it once you have real ones):
+# 2023-08-19,min_export_price,onion,national,-1,2,45,40% export duty imposed on onion,https://example.gov.in/notification
+event_date,event_type,commodity,scope,direction,magnitude,decay_days,title,source_url

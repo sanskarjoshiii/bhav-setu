@@ -1,0 +1,31 @@
+mandis:
+  - name: Lasalgaon
+    district: Nashik
+    state: Maharashtra
+    lat: 20.1436
+    lon: 74.2372
+  - name: Pimpalgaon Baswant
+    district: Nashik
+    state: Maharashtra
+    lat: 20.1667
+    lon: 73.9833
+  - name: Nashik
+    district: Nashik
+    state: Maharashtra
+    lat: 19.9975
+    lon: 73.7898
+  - name: Yeola
+    district: Nashik
+    state: Maharashtra
+    lat: 20.0424
+    lon: 74.4894
+  - name: Chandvad
+    district: Nashik
+    state: Maharashtra
+    lat: 20.3300
+    lon: 74.2400
+
+reference_village:
+  name: Vinchur
+  lat: 20.1100
+  lon: 74.3200

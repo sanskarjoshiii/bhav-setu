@@ -1,0 +1,25 @@
+# Every number below is used by backend/economics/net_realisation.py.
+# ⚠️ PHASE 5 MANUAL STEP: replace each "SOURCE: <fill in>" with a real URL.
+#    A judge will ask where these came from. Do not skip this.
+
+grade_factor: {A: 1.10, B: 1.00, C: 0.86}
+storage_factor: {ambient: 1.0, shed: 0.7, cold_store: 0.25}
+
+defaults:
+  hamali_per_qtl: 12          # SOURCE: <fill in>
+  weighing_per_qtl: 3         # SOURCE: <fill in>
+  packing_per_qtl: 8          # SOURCE: <fill in>
+  truck_capacity_qtl: 90
+  transport_per_km: 42        # SOURCE: <fill in>
+  interest_rate_annual: 0.14
+  storage_cost_per_qtl_per_day: {ambient: 0, shed: 0.6, cold_store: 3.5}
+
+states:
+  Maharashtra:
+    commission_pct: 3.0       # SOURCE: <fill in>
+    apmc_cess_pct: 1.05       # SOURCE: <fill in>
+    other_fees_pct: 0.3       # SOURCE: <fill in>
+  _default:
+    commission_pct: 2.5
+    apmc_cess_pct: 1.5
+    other_fees_pct: 0.5
