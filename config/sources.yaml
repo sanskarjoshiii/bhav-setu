@@ -7,9 +7,31 @@ agmarknet:
   resource_id_env: AGMARKNET_RESOURCE_ID
   api_key_env: DATA_GOV_IN_API_KEY
   page_limit: 1000
+  max_pages: 200                 # hard stop so a paging bug cannot loop forever
   filters:
     state: Maharashtra
     commodity: Onion
+  # Newer data.gov.in resources expect filters[state.keyword]=... instead of
+  # filters[state]=... . If page 1 comes back empty we retry once with this
+  # suffix appended to every filter key, and log a WARN saying we did.
+  filter_key_fallback_suffix: ".keyword"
+  # left = our canonical field, right = the field name in the API's JSON records
+  api_columns:
+    obs_date: arrival_date
+    state: state
+    district: district
+    mandi: market
+    commodity: commodity
+    variety: variety
+    grade: grade
+    min_price: min_price
+    max_price: max_price
+    modal_price: modal_price
+    arrival: arrivals
+  date_format: "%d/%m/%Y"
+  units:
+    price: rupees_per_quintal
+    arrival: quintal
   retry:
     attempts: 5
     backoff_seconds: [1, 2, 4, 8]
@@ -40,11 +62,52 @@ weather:
   forecast_url: https://api.open-meteo.com/v1/forecast
   daily_vars: [precipitation_sum, temperature_2m_max, temperature_2m_min]
   forecast_days: 16
+  # The archive API lags real time by a few days; anything newer than this comes
+  # from the forecast endpoint instead.
+  archive_lag_days: 5
 
 routing:
   osrm_url: http://router.project-osrm.org/route/v1/driving
   haversine_fallback_factor: 1.3
+  coord_precision: 4               # decimals used for the distance_cache primary key
 
 manual_files:
   shock_events: data/manual/shock_events.csv
   festivals: data/manual/festivals.csv
+
+# ── entity resolution (Phase 2.4) ───────────────────────────────────────────
+entity_resolution:
+  auto_threshold: 95               # >= this  -> map silently
+  review_threshold: 90             # 90..94   -> map, but write to fuzzy_review.csv
+  min_prefix_tokens_chars: 4       # "Lasalgaon(Vinchur)" -> Lasalgaon needs >= 4 chars
+  review_csv: data/artifacts/fuzzy_review.csv
+
+# ── cleaning rules (Phase 2.3) ──────────────────────────────────────────────
+# ⚠️ Never winsorise price spikes. A tripling onion price is real and is exactly
+#    the event we want to predict. These rules only remove impossible values.
+cleaning:
+  min_modal_price: 10              # reject_nonpositive: modal <= this
+  absurd_multiple: 20              # reject_absurd: modal > this x trailing median
+  trailing_median_window: 90
+  suspect_zscore: 6.0              # flag_suspect: |z| of daily log-return
+  suspect_window: 30
+  max_impute_gap_days: 3           # impute_gap: <= this many missing business days
+  # One canonical series per (mandi, commodity): source rows that differ only by
+  # variety/grade are merged into an arrival-weighted daily row. Downstream,
+  # grade is applied as a price factor (Phase 5), not as a separate series.
+  collapse_varieties: true
+
+# ── audit verdict thresholds (Phase 2.8) ────────────────────────────────────
+audit:
+  report_path: data/artifacts/data_audit.md
+  rejections_path: data/artifacts/rejections.json
+  usable:
+    min_rows: 500
+    min_coverage: 0.60
+  thin:
+    min_rows: 200
+    min_coverage: 0.35
+
+ingestion:
+  upsert_batch_size: 1000
+  http_timeout_seconds: 30

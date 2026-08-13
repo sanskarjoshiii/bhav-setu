@@ -9,6 +9,14 @@ lightgbm:
   num_boost_round: 800
   early_stopping_rounds: 60
 
+dataset:
+  # A label needs the realised price on the target date. Markets close, so we
+  # accept the most recent observation within this many days *before* the target
+  # date and record which date it came from; rows with nothing that close are
+  # dropped rather than guessed.
+  label_tolerance_days: 2
+  matrix_path: data/artifacts/train_matrix.parquet
+
 validation:
   n_folds: 3
   fold_months: 3          # each validation window is 3 months

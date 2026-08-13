@@ -37,3 +37,11 @@ class ModelNotFound(BhavSetuError):
 
 class LeakageError(BhavSetuError):
     """Point-in-time correctness was violated. This must never be caught and ignored."""
+
+
+class FeatureSetMismatch(BhavSetuError):
+    """The features produced do not match features/registry.py exactly.
+
+    Raised loudly because a model trained on one column order and served on
+    another fails silently — it just gets quietly worse.
+    """

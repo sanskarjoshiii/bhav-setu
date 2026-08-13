@@ -16,9 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import re
 import sys
-import unicodedata
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -33,6 +31,10 @@ from core.config import settings
 from core.db import get_conn
 from core.errors import ConfigError
 
+# One implementation, shared with Phase 2's fuzzy matcher: what we write here is
+# exactly what entity resolution compares against later.
+from ingestion.entity_resolution import normalise
+
 SCHEMA_PATH: Path = settings.path("db", "schema.sql")
 FESTIVALS_PATH: Path = settings.path("data", "manual", "festivals.csv")
 
@@ -40,19 +42,6 @@ FESTIVALS_PATH: Path = settings.path("data", "manual", "festivals.csv")
 # ──────────────────────────────────────────────────────────────────────────
 # helpers
 # ──────────────────────────────────────────────────────────────────────────
-
-def normalise(name: str) -> str:
-    """Lowercase, strip accents and punctuation, collapse whitespace.
-
-    Used for mandi.normalised_name and commodity_aliases.normalised_alias so
-    Phase 2's fuzzy matcher compares like with like.
-    """
-    decomposed = unicodedata.normalize("NFKD", name)
-    ascii_ish = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
-    lowered = ascii_ish.lower()
-    cleaned = re.sub(r"[^\w\s]", " ", lowered, flags=re.UNICODE)
-    return re.sub(r"\s+", " ", cleaned).strip()
-
 
 def table_names(conn: Connection) -> set[str]:
     rows = conn.execute(

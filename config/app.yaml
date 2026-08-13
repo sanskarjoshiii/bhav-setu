@@ -5,6 +5,23 @@ max_distance_km: 150
 default_language: mr
 history_lookback_days: 400
 
+# ── feature builder (Phase 3) ───────────────────────────────────────────────
+# Window sizes that appear in a feature's NAME (roll_mean_7, days_since_max_90…)
+# are fixed by that name and live in features/registry.py. Only genuinely
+# tunable numbers belong here.
+features:
+  min_observations: 60          # fewer real rows in the lookback -> InsufficientData
+  neighbour_k: 4                # other mandis averaged into nbr_price_mean_k4
+  neighbour_staleness_days: 7   # ignore a neighbour whose last price is older
+  elasticity_window: 60         # rolling OLS window for price_arrival_elasticity
+  momentum_window: 7            # linear fit window for arr_momentum
+  seasonal_week_halfwidth: 1    # ±weeks around week-of-year for arr_zscore_seasonal
+  festival_horizon_days: 60     # days_to_festival is capped here
+  liquidity_window_days: 90     # mandi_liquidity = mean arrivals over this window
+  data_quality_window_days: 90  # mandi_data_quality = non-imputed share
+  unseasonal_rain_mm_7d: 25     # rain over 7 days that counts as heavy…
+  monsoon_months: [6, 7, 8, 9]  # …outside these months it is unseasonal
+
 # cache TTLs in seconds
 cache_ttl:
   forecast: 3600

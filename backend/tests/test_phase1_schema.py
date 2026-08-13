@@ -205,31 +205,43 @@ def test_festivals_non_empty_and_cover_the_data_window() -> None:
 # ── writable tables ───────────────────────────────────────────────────────
 
 def test_distance_cache_accepts_an_insert() -> None:
-    with get_conn() as conn:
-        conn.execute(
-            text(
-                """
-                INSERT INTO distance_cache
-                    (from_lat, from_lon, to_lat, to_lon, road_km, duration_min, source)
-                VALUES (20.1100, 74.3200, 20.1436, 74.2372, 12.40, 21.5, 'osrm')
-                ON CONFLICT (from_lat, from_lon, to_lat, to_lon) DO UPDATE
-                    SET road_km = EXCLUDED.road_km
-                """
+    """Coordinates are deliberately fake (0.0001, ...).
+
+    Using the real Vinchur->Lasalgaon pair here would make this test's cleanup
+    DELETE a genuine cached OSRM route, and Phase 2 would silently lose it.
+    """
+    where = {"a": Decimal("0.0001"), "b": Decimal("0.0002"),
+             "c": Decimal("0.0003"), "d": Decimal("0.0004")}
+    try:
+        with get_conn() as conn:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO distance_cache
+                        (from_lat, from_lon, to_lat, to_lon, road_km, duration_min, source)
+                    VALUES (:a, :b, :c, :d, 12.40, 21.5, 'osrm')
+                    ON CONFLICT (from_lat, from_lon, to_lat, to_lon) DO UPDATE
+                        SET road_km = EXCLUDED.road_km
+                    """
+                ),
+                where,
             )
-        )
-        km = conn.execute(
-            text(
-                "SELECT road_km FROM distance_cache "
-                "WHERE from_lat = 20.1100 AND from_lon = 74.3200 "
-                "AND to_lat = 20.1436 AND to_lon = 74.2372"
+            km = conn.execute(
+                text(
+                    "SELECT road_km FROM distance_cache "
+                    "WHERE from_lat = :a AND from_lon = :b AND to_lat = :c AND to_lon = :d"
+                ),
+                where,
+            ).scalar_one()
+    finally:
+        with get_conn() as conn:
+            conn.execute(
+                text(
+                    "DELETE FROM distance_cache "
+                    "WHERE from_lat = :a AND from_lon = :b AND to_lat = :c AND to_lon = :d"
+                ),
+                where,
             )
-        ).scalar_one()
-        conn.execute(
-            text(
-                "DELETE FROM distance_cache WHERE from_lat = 20.1100 AND from_lon = 74.3200 "
-                "AND to_lat = 20.1436 AND to_lon = 74.2372"
-            )
-        )
     assert km == Decimal("12.40")
 
 

@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p data/raw data/artifacts)",
+      "Bash(touch data/raw/.gitkeep data/artifacts/.gitkeep)",
+      "Bash(python -c \"import pandas, numpy, sqlalchemy, yaml, httpx, rich; print\\('libs ok'\\)\")",
+      "Bash(python -m venv venv2)",
+      "Bash(./venv2/Scripts/python.exe -m pip install -q --disable-pip-version-check pandas numpy sqlalchemy rapidfuzz pyyaml python-dotenv httpx rich pytest)",
+      "Bash(./venv2/Scripts/python.exe -c \"import pandas,rapidfuzz,rich;print\\('ok', pandas.__version__\\)\")",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase2_ingestion.py -v -k \"not \\(dense_history or nonpositive_prices or contradicting or every_row_has or imputed_runs or weather_exists or forecast_rows or shock_events_loaded or distance_cache_covers or ingestion_runs or audit_report_exists or history_spans\\)\")",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase2_ingestion.py -k \"not \\(dense_history or nonpositive_prices or contradicting or every_row_has or imputed_runs or weather_exists or forecast_rows or shock_events_loaded or distance_cache_covers or ingestion_runs or audit_report_exists or history_spans\\)\")",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/smoke.py\")",
+      "Bash(sed -i 's/_same\\(before, after\\)/_differences\\(before, after\\)/; s/_same\\(cached, direct\\)/_differences\\(cached, direct\\)/' backend/tests/test_phase3_features.py)",
+      "Bash(sed -i 's/    phase2: ingestion, cleaning and audit checks/    phase2: ingestion, cleaning and audit checks\\\\n    phase3: feature builder and training matrix checks/' backend/pytest.ini)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase3_features.py -v -k \"not \\(build_features_returns or mostly_populated or no_leakage or insufficient_data_raises or unknown_commodity or cached_and_uncached or training_matrix or labels_are_log or every_horizon\\)\")",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/smoke3.py\")",
+      "Bash(DATABASE_URL=x c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe -c ' *)",
+      "Bash(DATABASE_URL=\"x\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase3_features.py tests/test_phase2_ingestion.py -k \"not \\(build_features_returns or mostly_populated or no_leakage or insufficient_data_raises or unknown_commodity or cached_and_uncached or training_matrix or labels_are_log or every_horizon or dense_history or nonpositive_prices or contradicting or every_row_has or imputed_runs or weather_exists or forecast_rows or shock_events_loaded or distance_cache_covers or ingestion_runs or audit_report_exists or history_spans\\)\")",
+      "Bash(DATABASE_URL=\"x\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/smoke3.py\")",
+      "Bash(\"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pip install -q --disable-pip-version-check \"psycopg[binary]>=3.1\" pyarrow)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" scripts/init_db.py --force)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase1_schema.py -q)",
+      "Bash(DATABASE_URL=postgresql+psycopg://bhav:bhav@localhost:5433/bhav c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe -c ' *)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" scripts/backfill.py --only weather)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" scripts/backfill.py --only routing)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" scripts/backfill.py --only audit)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase2_ingestion.py tests/test_phase3_features.py -q --no-header -rf)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase2_ingestion.py tests/test_phase3_features.py -q --no-header)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/test_phase3_features.py -q --no-header -rf)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/ -q --no-header)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/ --no-header -q)",
+      "Bash(DATABASE_URL=\"postgresql+psycopg://bhav:bhav@localhost:5433/bhav\" \"c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe\" -m pytest tests/ --no-header -p no:cacheprovider)",
+      "Bash(make --version)",
+      "Bash(c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe -c ' *)",
+      "WebSearch",
+      "WebFetch(domain:www.kaggle.com)",
+      "WebFetch(domain:agmarknet.ceda.ashoka.edu.in)"
+    ]
+  }
+}
