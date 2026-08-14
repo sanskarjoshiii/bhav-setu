@@ -36,26 +36,58 @@ agmarknet:
     attempts: 5
     backoff_seconds: [1, 2, 4, 8]
 
+# ── CEDA Agri Market Data (Ashoka University) — the historical backbone ─────
+# Reverse-engineered from the portal's own frontend calls. Two endpoints, both
+# POST JSON: /api/prices gives p_min/p_max/p_modal, /api/quantities gives qty.
+# Merged on (date, district) into one row per district per day.
+#
+# Granularity is district, not market — see the note in config/mandis.yaml.
+# The server 504s on multi-year spans, so requests are chunked by year.
+ceda:
+  base_url: https://agmarknet.ceda.ashoka.edu.in
+  prices_path: /api/prices
+  quantities_path: /api/quantities
+  state_id: 27                  # Maharashtra (census id)
+  commodity_id: 23              # Onion
+  calculation_type: d           # d = daily, m = monthly
+  start_date: "2022-10-01"
+  end_date: null                # null = today
+  chunk_months: 6               # their nginx cuts every request off at 60s
+  http_timeout_seconds: 90
+  pause_seconds: 20             # they throttle hard under load — go slowly
+  # Every successful window is cached here, so an interrupted or throttled pull
+  # resumes instead of re-asking a public server for rows we already have.
+  cache_dir: data/artifacts/ceda_cache
+  retry:
+    attempts: 4
+    backoff_seconds: [30, 120, 300, 600]
+  units:
+    price: rupees_per_quintal
+    arrival: quintal
+  date_format: "%Y-%m-%d"
+
 csv_backfill:
+  # Written by scripts/merge_ceda_csv.py, which joins CEDA's separate price and
+  # quantity exports into one row per market per day.
   path: data/raw/mandi_history.csv
   chunk_size: 100000
   # left  = our canonical field, right = column name in the source CSV
   columns:
-    obs_date: Price Date
-    state: State
-    district: District
-    mandi: Market
-    commodity: Commodity
-    variety: Variety
-    grade: Grade
-    min_price: Min Price
-    max_price: Max Price
-    modal_price: Modal Price
-    arrival: Arrivals
+    obs_date: obs_date
+    state: state
+    district: district
+    mandi: mandi
+    commodity: commodity
+    variety: variety
+    grade: grade
+    min_price: min_price
+    max_price: max_price
+    modal_price: modal_price
+    arrival: arrival_qtl
   units:
     price: rupees_per_quintal      # rupees_per_quintal | rupees_per_kg
     arrival: quintal               # quintal | tonne
-  date_format: "%d/%m/%Y"
+  date_format: "%Y-%m-%d"
 
 weather:
   archive_url: https://archive-api.open-meteo.com/v1/archive

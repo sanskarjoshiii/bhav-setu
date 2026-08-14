@@ -1,9 +1,34 @@
-# PHASE 2 MANUAL STEP: fill this with ~20 real onion policy events from the last 3 years.
-# event_type: export_ban | export_allowed | min_export_price | stock_limit | buffer_release | import_duty | strike
-# direction:  -1 = bearish for the farmer (prices fall), +1 = bullish (prices rise)
+# Onion policy shocks, 2022-2025. Read by backend/ingestion/shocks.py.
+#
+# direction:  -1 = bearish for the farmer (domestic supply up / exports blocked)
+#             +1 = bullish for the farmer (exports opened / supply tightened)
 # magnitude:  1 low | 2 medium | 3 high
-# decay_days: how long the effect plausibly persists; the feature builder uses tau = decay_days / 3
+# decay_days: plausible persistence; the feature builder uses tau = decay_days / 3
 # scope:      national | state:Maharashtra
-# Example row (delete it once you have real ones):
-# 2023-08-19,min_export_price,onion,national,-1,2,45,40% export duty imposed on onion,https://example.gov.in/notification
+#
+# ⚠️ Dates for the major DGFT/PIB actions below were checked against news and PIB
+#    reporting. The buffer-procurement and stock-limit rows marked "approx" are
+#    from reporting without an exact notification date — verify before the demo
+#    if a judge is likely to press on them.
 event_date,event_type,commodity,scope,direction,magnitude,decay_days,title,source_url
+2022-09-15,buffer_release,onion,national,-1,1,30,NAFED begins buffer onion disposal in consuming markets (approx),https://nafed-india.com/
+2022-11-10,buffer_release,onion,national,-1,1,30,Buffer stock offloading continues into kharif arrivals (approx),https://nafed-india.com/
+2023-03-20,buffer_procurement,onion,state:Maharashtra,1,1,30,Centre announces rabi onion procurement for buffer after Nashik price crash (approx),https://www.pib.gov.in/
+2023-06-05,buffer_procurement,onion,national,1,1,45,Buffer target raised to 3 lakh tonnes for 2023-24 (approx),https://www.pib.gov.in/
+2023-08-19,export_duty,onion,national,-1,2,60,40% export duty imposed on onion until 31 December 2023,https://www.newsonair.gov.in/centre-imposes-40-percent-export-duty-on-onions-to-improve-its-domestic-availability
+2023-08-28,buffer_release,onion,national,-1,2,30,NCCF and NAFED begin retail sales at subsidised rate to cool prices (approx),https://www.pib.gov.in/
+2023-10-28,min_export_price,onion,national,-1,2,45,Minimum export price of USD 800 per tonne imposed on onion,https://www.globaltradealert.org/
+2023-12-08,export_ban,onion,national,-1,3,90,Onion exports prohibited to ensure domestic availability,https://www.pib.gov.in/
+2024-02-18,export_allowed,onion,national,1,1,20,Reports of partial relaxation for specific destinations (approx),https://www.pib.gov.in/
+2024-03-22,export_ban,onion,national,-1,3,60,Export prohibition extended beyond 31 March 2024 until further orders,https://www.pib.gov.in/
+2024-05-04,export_allowed,onion,national,1,3,60,Export ban lifted with MEP of USD 550 per tonne and 40% export duty,https://www.businesstoday.in/india/story/govt-removes-restrictions-on-onion-exports-sets-minimum-export-price-of-550-per-mt-428256-2024-05-04
+2024-06-04,buffer_procurement,onion,state:Maharashtra,1,1,30,Buffer procurement target of 5 lakh tonnes announced for 2024-25 (approx),https://www.pib.gov.in/
+2024-09-05,buffer_release,onion,national,-1,2,30,NCCF and NAFED start retail sales at Rs 35 per kg via mobile vans,https://theprint.in/economy/govt-steps-up-buffer-stock-sale-to-control-onion-prices-after-export-duty-removal/2280065/
+2024-09-13,min_export_price,onion,national,1,2,45,Minimum export price of USD 550 per tonne on onion withdrawn,https://www.globaltradealert.org/intervention/139508/export-tax/india-minimum-export-price-on-onion-withdrawn-13-september-2024
+2024-09-14,export_duty,onion,national,1,2,45,Onion export duty cut from 40% to 20%,https://www.business-standard.com/economy/news/govt-steps-up-buffer-stock-sale-to-control-onion-prices-after-duty-removal-124092300516_1.html
+2024-09-23,buffer_release,onion,national,-1,2,30,Government steps up buffer stock sale after export duty removal,https://www.business-standard.com/economy/news/govt-steps-up-buffer-stock-sale-to-control-onion-prices-after-duty-removal-124092300516_1.html
+2024-12-15,buffer_release,onion,national,-1,1,30,Continued buffer disposal through late kharif arrivals (approx),https://www.pib.gov.in/
+2025-01-20,export_duty,onion,national,1,1,30,Trade reports of pressure to remove the residual 20% export duty (approx),https://www.business-standard.com/
+2025-03-22,export_duty,onion,national,1,3,60,20% onion export duty withdrawn with effect from 1 April 2025,https://www.pib.gov.in/PressReleaseIframePage.aspx?PRID=2114060
+2025-04-01,export_duty,onion,national,1,2,45,Removal of 20% export duty takes effect,https://www.tribuneindia.com/news/business/government-withdraws-20-per-cent-duty-on-onion-export-decision-to-come-into-effect-from-april-1
+2025-06-10,buffer_procurement,onion,state:Maharashtra,1,1,30,Rabi buffer procurement under way in Nashik belt (approx),https://www.pib.gov.in/

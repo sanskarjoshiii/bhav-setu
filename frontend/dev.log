@@ -1,0 +1,14 @@
+
+> bhav-setu-web@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1868ms
+ ○ Compiling / ...
+ ✓ Compiled / in 17.6s (1737 modules)
+ GET / 200 in 17904ms
+ GET / 200 in 59ms
+ GET / 200 in 65ms

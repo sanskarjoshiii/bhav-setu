@@ -4,6 +4,7 @@
 # data
 data/raw/
 data/artifacts/
+agmarknet-india-commodity-prices-2024-2025/
 !data/raw/.gitkeep
 !data/artifacts/.gitkeep
 

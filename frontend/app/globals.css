@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-cream text-ink;
+    font-feature-settings: "ss01", "cv01";
+  }
+  ::selection {
+    @apply bg-ink text-cream;
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-shell px-5 sm:px-8;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-card shadow-card;
+  }
+
+  .panel {
+    @apply rounded-2xl bg-panel;
+  }
+
+  /* Nav */
+  .navlink {
+    @apply rounded-full px-3.5 py-2 text-[0.875rem] font-medium text-ink/70 transition hover:text-ink;
+  }
+  .navlink-active {
+    @apply bg-ink text-cream hover:text-cream;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5
+           text-[0.9rem] font-medium transition disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-cream hover:bg-ink/90;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-card text-ink hover:bg-panel;
+  }
+  .btn-quiet {
+    @apply btn text-ink/70 hover:text-ink;
+  }
+
+  /* Forms */
+  .label {
+    @apply mb-1.5 block text-[0.68rem] font-medium uppercase tracking-[0.09em] text-muted;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-card px-4 py-3 text-[0.95rem]
+           outline-none transition placeholder:text-muted/60 focus:border-ink/40;
+  }
+  .select {
+    @apply input appearance-none pr-10;
+  }
+  .segment {
+    @apply flex-1 rounded-xl border border-line bg-card px-3 py-2.5 text-center text-[0.88rem]
+           font-medium text-ink/70 transition hover:border-ink/30;
+  }
+  .segment-active {
+    @apply border-ink bg-ink text-cream hover:border-ink;
+  }
+
+  /* Type */
+  .eyebrow {
+    @apply text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted;
+  }
+  .h1 {
+    @apply text-[2.6rem] font-bold leading-[1.06] tracking-[-0.02em] sm:text-[3.4rem];
+  }
+  .h2 {
+    @apply text-[1.9rem] font-bold leading-[1.12] tracking-[-0.018em] sm:text-[2.3rem];
+  }
+  .h3 {
+    @apply text-[1.12rem] font-semibold tracking-[-0.01em];
+  }
+  .lede {
+    @apply text-[1.02rem] leading-relaxed text-muted;
+  }
+
+  /* Stats */
+  .stat {
+    @apply rounded-xl bg-panel px-5 py-4;
+  }
+  .stat-label {
+    @apply text-[0.66rem] font-medium uppercase tracking-[0.12em] text-muted;
+  }
+  .stat-value {
+    @apply mt-1.5 text-[1.5rem] font-bold tracking-[-0.02em];
+  }
+
+  /* Tables */
+  .th {
+    @apply px-4 py-3 text-left text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted;
+  }
+  .td {
+    @apply px-4 py-4 text-[0.92rem] align-middle;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1
+           text-[0.75rem] font-medium text-muted;
+  }
+  .chip-active {
+    @apply border-ink bg-ink text-cream;
+  }
+}
+
+/* Leaflet needs a concrete height and we mute its default blue */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #e9e9dd;
+  font-family: inherit;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.rise {
+  animation: rise 0.32s ease-out both;
+}

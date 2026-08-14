@@ -34,7 +34,27 @@
       "Bash(c:/Users/kamra/AppData/Local/Temp/claude/c--Extra-Pro-bhav-setu/c6e0700b-6562-4de2-9f2e-813c30e6ef51/scratchpad/venv2/Scripts/python.exe -c ' *)",
       "WebSearch",
       "WebFetch(domain:www.kaggle.com)",
-      "WebFetch(domain:agmarknet.ceda.ashoka.edu.in)"
+      "WebFetch(domain:agmarknet.ceda.ashoka.edu.in)",
+      "Bash(.venv/Scripts/python.exe scripts/merge_ceda_csv.py)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/Scripts/python.exe scripts/backfill.py --skip-ceda --skip-agmarknet)",
+      "Bash(timeout 300 ../.venv/Scripts/python.exe -m pytest tests/test_phase2_ingestion.py -v -p no:cacheprovider)",
+      "Bash(timeout 600 ../.venv/Scripts/python.exe -m pytest tests/test_phase3_features.py -v -p no:cacheprovider)",
+      "Bash(timeout 600 ../.venv/Scripts/python.exe -m pytest tests/test_phase3_features.py::test_build_features_returns_the_registry_exactly -p no:cacheprovider)",
+      "Bash(curl -s http://localhost:3000/community)",
+      "Bash(curl -s http://localhost:3000/history)",
+      "Bash(curl -s http://localhost:3000/dashboard)",
+      "Bash(curl -s http://localhost:3000/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(node .testbuild/run-tests.js)",
+      "Bash(node -e ' *)",
+      "Bash(bash .testbuild/route-tests.sh)",
+      "Bash(grep -oE \"Today.{0,10}mandi prices[^<]*\")",
+      "Bash(sed -i 's|check /dashboard    \"Today.s mandi prices\"      \"district board renders\"|check /dashboard    \"mandi prices — Nashik\"    \"district board renders\"|' .testbuild/route-tests.sh)",
+      "Bash(sed -i 's|check /history      \"H-2026\"             \"seeded history entries\"|check /history      \"Pomegranate\"        \"seeded history entries\"|' .testbuild/route-tests.sh)",
+      "PowerShell(Get-NetTCPConnection -State Listen -LocalPort 3000,3001,3002 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; \"killed pid $_\" } catch {} }; Get-Process node -ErrorAction SilentlyContinue | ForEach-Object { try { Stop-Process -Id $_.Id -Force -ErrorAction Stop; \"killed node $\\($_.Id\\)\" } catch {} }; Start-Sleep -Seconds 2; \"ports now:\"; Get-NetTCPConnection -State Listen -LocalPort 3000,3001,3002 -ErrorAction SilentlyContinue | Select-Object LocalPort)",
+      "Bash(grep -c '```mermaid' docs/diagrams-ppt.md)",
+      "Bash(awk '/```mermaid/{n++; c=0} /-->/{c++} /```$/{if\\(n&&c\\){print \"  diagram \" n \": \" c \" links\"; c=0}}' docs/diagrams-ppt.md)"
     ]
   }
 }

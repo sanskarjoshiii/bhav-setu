@@ -21,9 +21,11 @@ from core import logging as log
 from core.config import settings
 from core.errors import BhavSetuError, ConfigError
 from ingestion import ingestion_run
-from ingestion import agmarknet, audit, backfill_csv, routing, shocks, weather
+from ingestion import agmarknet, audit, backfill_csv, ceda, routing, shocks, weather
 
-STEPS: tuple[str, ...] = ("csv", "agmarknet", "weather", "shocks", "routing", "audit")
+# ceda runs first: it is the historical backbone (3 years of daily prices AND
+# arrivals). The CSV step is optional now and only adds a source-specific dump.
+STEPS: tuple[str, ...] = ("ceda", "csv", "agmarknet", "weather", "shocks", "routing", "audit")
 
 
 def _parse_date(value: str) -> date:
@@ -58,8 +60,14 @@ def main(argv: list[str] | None = None) -> int:
     summary: dict[str, Any] = {}
     failures: list[str] = []
 
+    if wanted("ceda"):
+        if not _run_step("ceda", ceda.run, summary):
+            failures.append("ceda")
+
     if wanted("csv"):
-        if not _run_step("csv_backfill", backfill_csv.run, summary):
+        if not backfill_csv.CSV_PATH.exists():
+            log.info("csv_skipped", reason="no file", path=str(backfill_csv.CSV_PATH))
+        elif not _run_step("csv_backfill", backfill_csv.run, summary):
             failures.append("csv")
 
     if wanted("agmarknet"):
@@ -89,9 +97,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Per-rule cleaning counts live in an artifact so the audit can report them
     # even when it is re-run on its own.
-    cleaning = summary.get("csv_backfill")
-    if isinstance(cleaning, dict) and "rejected_by_rule" in cleaning:
-        audit.write_rejections(cleaning)
+    for step_name in ("ceda", "csv_backfill"):
+        cleaning = summary.get(step_name)
+        if isinstance(cleaning, dict) and "rejected_by_rule" in cleaning:
+            audit.write_rejections(cleaning)
+            break
 
     if wanted("audit"):
         try:

@@ -1,3 +1,9 @@
+# The Nashik onion belt — market level, matching the CEDA export and the website.
+#
+# The source spells sub-yards separately ("Lasalgaon(Vinchur)",
+# "Pimpalgaon Baswant(Saykheda)", "Nasik"). entity_resolution.py folds those into
+# these five via its prefix rule plus fuzzy matching, so do not add them here.
+
 mandis:
   - name: Lasalgaon
     district: Nashik
