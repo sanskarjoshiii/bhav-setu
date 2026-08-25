@@ -259,3 +259,43 @@ CREATE TABLE ingestion_runs (
     error         TEXT
 );
 CREATE INDEX idx_ingestion_job ON ingestion_runs (job, started_at DESC);
+
+-- ───────────────────────── coverage (Phase A2) ──────────────────────────
+-- Round 1 asked "is this mandi usable?". With fourteen crops across four
+-- districts that is the wrong unit: Nashik is dense in onion and empty in
+-- banana, and a mandi-level verdict hides both facts. This view is the
+-- (district x crop) grain the audit and the crop list are decided on.
+--
+-- `mandis` here counts markets that actually reported, not markets configured —
+-- a district with four yards and one reporting is a different thing from a
+-- district with four reporting, and the difference must be visible.
+
+CREATE INDEX idx_mandis_district ON mandis (district);
+
+CREATE VIEW crop_coverage AS
+SELECT
+    m.district                                          AS district,
+    c.id                                                AS commodity_id,
+    c.name                                              AS commodity,
+    c.perishability_class                               AS perishability_class,
+    count(*)::int                                       AS row_count,
+    count(DISTINCT p.mandi_id)::int                     AS mandis,
+    min(p.obs_date)                                     AS first_date,
+    max(p.obs_date)                                     AS last_date,
+    (max(p.obs_date) - min(p.obs_date) + 1)::int        AS span_days,
+    count(DISTINCT p.obs_date)::int                     AS observed_days,
+    count(*) FILTER (WHERE p.is_imputed)::int           AS imputed_rows,
+    count(*) FILTER (WHERE p.suspect)::int              AS suspect_rows,
+    round(min(p.modal_price), 2)                        AS price_min,
+    -- percentile_cont takes double precision, so the cast is explicit rather
+    -- than left to an implicit numeric conversion that could pick a different
+    -- overload on another Postgres version.
+    round(percentile_cont(0.5)
+          WITHIN GROUP (ORDER BY p.modal_price::double precision)::numeric, 2)
+                                                        AS price_median,
+    round(max(p.modal_price), 2)                        AS price_max,
+    count(p.arrival_qtl)::int                           AS arrival_rows
+FROM price_observations p
+JOIN mandis      m ON m.id = p.mandi_id
+JOIN commodities c ON c.id = p.commodity_id
+GROUP BY m.district, c.id, c.name, c.perishability_class;

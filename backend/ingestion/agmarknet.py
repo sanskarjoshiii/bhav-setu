@@ -22,8 +22,9 @@ from core import logging as log
 from core.config import settings
 from core.db import get_conn
 from core.errors import IngestionError
-from ingestion import RunCounters, normalise_units, upsert_price_observations
-from ingestion.cleaners import CANONICAL_COLUMNS, CleaningReport, clean_frame
+from ingestion import RunCounters, upsert_price_observations
+from ingestion import datagov
+from ingestion.cleaners import CleaningReport, clean_frame
 from ingestion.entity_resolution import Resolver
 
 SOURCE: str = "agmarknet_api"
@@ -136,48 +137,21 @@ def fetch_records() -> tuple[list[dict[str, Any]], int, bool]:
 
 def _to_frame(records: list[dict[str, Any]], resolver: Resolver,
               result: ApiResult) -> pd.DataFrame:
-    mapping = {k: str(v) for k, v in _CFG.api_columns.to_dict().items()}
-    raw = pd.DataFrame(records)
-    if raw.empty:
-        return raw
+    """Delegates to the shared parser in ingestion/datagov.py.
 
-    missing = [col for field, col in mapping.items()
-               if field in ("obs_date", "mandi", "commodity", "modal_price")
-               and col not in raw.columns]
-    if missing:
-        raise IngestionError(
-            f"agmarknet response has no field(s) {missing}. Actual fields: {list(raw.columns)}. "
-            f"Fix config/sources.yaml -> agmarknet.api_columns."
-        )
-
-    df = raw.rename(columns={col: field for field, col in mapping.items() if col in raw.columns})
-    for field in CANONICAL_COLUMNS:
-        if field not in df.columns and field != "arrival_qtl":
-            df[field] = None
-    df["arrival_qtl"] = df["arrival"] if "arrival" in df.columns else None
-
-    commodity_ids = df["commodity"].map(lambda n: resolver.resolve_commodity(str(n)).entity_id)
-    df = df[commodity_ids.notna()].copy()
-    if df.empty:
-        return df
-    df["commodity_id"] = commodity_ids[commodity_ids.notna()].astype(int)
-
-    districts = df["district"] if "district" in df.columns else pd.Series("", index=df.index)
-    states = df["state"] if "state" in df.columns else pd.Series("", index=df.index)
-    df["mandi_id"] = [
-        resolver.resolve_mandi(str(n), str(d or ""), str(s or "")).entity_id
-        for n, d, s in zip(df["mandi"], districts, states)
-    ]
-    df = df[df["mandi_id"].notna()].copy()
-    if df.empty:
-        return df
-    df["mandi_id"] = df["mandi_id"].astype(int)
-
-    df["obs_date"] = pd.to_datetime(df["obs_date"], format=str(_CFG.date_format), errors="coerce")
-    df = df[df["obs_date"].notna()].copy()
-    df = normalise_units(df, _CFG.units.to_dict())
-    result.rows_matched = int(len(df))
-    return df[list(CANONICAL_COLUMNS)]
+    This module is the single-crop version of the same fetch; Phase A1 kept one
+    copy of the parsing so a fix to the column mapping cannot reach one caller
+    and miss the other. Only the config block differs.
+    """
+    frame = datagov.records_to_frame(
+        records,
+        resolver,
+        columns=_CFG.api_columns.to_dict(),
+        date_format=str(_CFG.date_format),
+        units=_CFG.units.to_dict(),
+    )
+    result.rows_matched = int(len(frame))
+    return frame
 
 
 def run(counters: RunCounters | None = None) -> ApiResult:

@@ -1,10 +1,27 @@
-# The Nashik onion belt — market level, matching the CEDA export and the website.
+# Phase A2 — four districts, seventeen market yards.
+#
+# Round 1 knew about the Nashik onion belt and nothing else. That was enough to
+# forecast one crop; it is not enough to answer "which market should I go to?",
+# because the whole point of the compare page is that a nearer market paying less
+# can put more money in a farmer's hand — and you cannot show that with five
+# markets inside one taluka.
+#
+# Districts were picked so the crop list has somewhere to live: Nashik for onion
+# and grapes, Pune for the daily vegetable trade, Solapur for pomegranate and
+# onion, Ahmednagar for onion and vegetables.
 #
 # The source spells sub-yards separately ("Lasalgaon(Vinchur)",
 # "Pimpalgaon Baswant(Saykheda)", "Nasik"). entity_resolution.py folds those into
-# these five via its prefix rule plus fuzzy matching, so do not add them here.
+# these entries via its prefix rule plus fuzzy matching, so do not add them here.
+#
+# ⚠️ Coordinates are town centroids to about 3 decimal places, not surveyed APMC
+#    gate positions. They feed road distance (ingestion/routing.py) and therefore
+#    transport cost, so a 2-3 km error moves a 60 km trip's cost by a few percent.
+#    Good enough to rank markets; worth replacing with real gate coordinates
+#    before anyone quotes a rupee figure as exact.
 
 mandis:
+  # ── Nashik — onion capital, plus grapes and tomato ──────────────────────
   - name: Lasalgaon
     district: Nashik
     state: Maharashtra
@@ -31,6 +48,83 @@ mandis:
     lat: 20.3300
     lon: 74.2400
 
+  # ── Pune — the state's biggest daily vegetable trade ─────────────────────
+  - name: Pune
+    district: Pune
+    state: Maharashtra
+    lat: 18.4933
+    lon: 73.8646        # Gultekdi Market Yard, not the city centroid
+  - name: Junnar
+    district: Pune
+    state: Maharashtra
+    lat: 19.2050
+    lon: 73.8750
+  - name: Manchar
+    district: Pune
+    state: Maharashtra
+    lat: 19.0000
+    lon: 73.9400
+  - name: Khed
+    district: Pune
+    state: Maharashtra
+    lat: 18.8600
+    lon: 73.9000
+  - name: Baramati
+    district: Pune
+    state: Maharashtra
+    lat: 18.1514
+    lon: 74.5773
+
+  # ── Solapur — pomegranate, onion, and the long-haul comparison ───────────
+  - name: Solapur
+    district: Solapur
+    state: Maharashtra
+    lat: 17.6599
+    lon: 75.9064
+  - name: Pandharpur
+    district: Solapur
+    state: Maharashtra
+    lat: 17.6790
+    lon: 75.3300
+  - name: Barshi
+    district: Solapur
+    state: Maharashtra
+    lat: 18.2333
+    lon: 75.6900
+
+  # ── Ahmednagar — onion and vegetables, between Nashik and Pune ───────────
+  - name: Ahmednagar
+    district: Ahmednagar
+    state: Maharashtra
+    lat: 19.0952
+    lon: 74.7496
+  - name: Rahuri
+    district: Ahmednagar
+    state: Maharashtra
+    lat: 19.3900
+    lon: 74.6500
+  - name: Sangamner
+    district: Ahmednagar
+    state: Maharashtra
+    lat: 19.5700
+    lon: 74.2100
+  - name: Shrirampur
+    district: Ahmednagar
+    state: Maharashtra
+    lat: 19.6200
+    lon: 74.6600
+
+# Where a farmer is assumed to be standing when we compute distance to market.
+# One per district: quoting a Solapur farmer his distance from a Nashik village
+# would make every net-in-hand figure on the compare page wrong.
+reference_villages:
+  Nashik:     {name: Vinchur,   lat: 20.1100, lon: 74.3200}
+  Pune:       {name: Narayangaon, lat: 19.0700, lon: 73.9600}
+  Solapur:    {name: Mohol,     lat: 17.8200, lon: 75.6600}
+  Ahmednagar: {name: Rahata,    lat: 19.7100, lon: 74.4800}
+
+# The default when no district is known. Kept as a flat key because
+# ingestion/routing.py and the Phase 2 tests already read it by this name.
 reference_village:
   name: Vinchur
   lat: 20.1100

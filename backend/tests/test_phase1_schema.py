@@ -126,12 +126,23 @@ def _columns(table: str) -> list[dict[str, Any]]:
 
 # ── seeded reference data ─────────────────────────────────────────────────
 
-def test_five_mandis_seeded() -> None:
+def test_every_configured_mandi_is_seeded() -> None:
+    """Config and database must agree exactly — in both directions.
+
+    Was `test_five_mandis_seeded` until Phase A2 grew the list to seventeen
+    across four districts. Comparing the two sets catches what a count never
+    could: a mandi silently swallowed by the ON CONFLICT clause because two
+    entries normalise to the same name.
+    """
     configured = [m["name"] for m in settings.mandis.mandis]
     with get_conn() as conn:
         seeded = conn.execute(text("SELECT name FROM mandis ORDER BY name")).scalars().all()
-    assert len(seeded) == 5, f"expected 5 mandis, found {len(seeded)}: {seeded}"
-    assert sorted(seeded) == sorted(configured)
+    assert sorted(seeded) == sorted(configured), (
+        f"config has {len(configured)}, database has {len(seeded)}; "
+        f"only in config: {sorted(set(configured) - set(seeded))}; "
+        f"only in database: {sorted(set(seeded) - set(configured))}"
+    )
+    assert len({m["district"] for m in settings.mandis.mandis}) >= 3
 
 
 def test_mandis_have_coordinates_and_state() -> None:

@@ -36,6 +36,54 @@ agmarknet:
     attempts: 5
     backoff_seconds: [1, 2, 4, 8]
 
+# ── data.gov.in daily forward feed (Phase A1) ───────────────────────────────
+# The one source that keeps working every day. Supersedes the single-crop
+# `agmarknet` block above: same endpoint, but it walks every crop in
+# config/crops.yaml, writes each crop as it lands, and caches every page to
+# disk so a throttle or a Ctrl-C costs us nothing we already fetched.
+datagov:
+  base_url: https://api.data.gov.in/resource
+  resource_id_env: AGMARKNET_RESOURCE_ID
+  api_key_env: DATA_GOV_IN_API_KEY
+  page_limit: 1000
+  max_pages: 200                 # hard stop so a paging bug cannot loop forever
+  state: Maharashtra
+  # null -> every crop in config/crops.yaml, filtered by its first alias.
+  # Set an explicit list only if data.gov.in's commodity vocabulary disagrees
+  # with ours; a wrong name yields 0 rows and a loud WARN, never bad rows.
+  commodities: null
+  # Newer resources expect filters[state.keyword]=... instead of filters[state]=.
+  # If page 1 is empty we retry once with this suffix and log that we did.
+  filter_key_fallback_suffix: ".keyword"
+  # left = our canonical field, right = the field name in the API's JSON records
+  api_columns:
+    obs_date: arrival_date
+    state: state
+    district: district
+    mandi: market
+    commodity: commodity
+    variety: variety
+    grade: grade
+    min_price: min_price
+    max_price: max_price
+    modal_price: modal_price
+    arrival: arrivals
+  date_format: "%d/%m/%Y"
+  units:
+    price: rupees_per_quintal
+    arrival: quintal
+  pause_seconds: 1.5             # be a good citizen between crops
+  # Every page is written here before it is parsed. Re-running the same day
+  # replays from disk instead of re-asking a public server for rows we have.
+  cache_dir: data/artifacts/datagov_cache
+  retry:
+    attempts: 5
+    backoff_seconds: [2, 5, 15, 45]
+  # Anti-vacuity: a run where every crop came back empty is a failure, not a
+  # quiet success. Silence from an upstream API looks exactly like "no market
+  # activity today" unless we refuse to accept it.
+  min_total_rows: 1
+
 # ── CEDA Agri Market Data (Ashoka University) — the historical backbone ─────
 # Reverse-engineered from the portal's own frontend calls. Two endpoints, both
 # POST JSON: /api/prices gives p_min/p_max/p_modal, /api/quantities gives qty.

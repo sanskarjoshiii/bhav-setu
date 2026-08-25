@@ -23,3 +23,13 @@ states:
     commission_pct: 2.5
     apmc_cess_pct: 1.5
     other_fees_pct: 0.5
+
+# ── spoilage (Phase A2/A5) ──────────────────────────────────────────────────
+# spoilage_fraction(d) = 1 - exp(-k_c * d), adjusted for storage and temperature.
+# Every crop's k_c in config/crops.yaml is derived as anchor / shelf_life_days,
+# so "shelf life" means one thing across all fourteen crops: the day by which
+# 1 - exp(-0.54) = 42% of an ambient, ungraded lot is gone. The value is exactly
+# the onion pair this project started with (0.006 x 90 = 0.54), so widening from
+# one crop to fourteen did not silently move onion.
+spoilage:
+  anchor: 0.54

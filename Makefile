@@ -6,8 +6,9 @@ else
 	BIN := $(VENV)/bin
 endif
 
-.PHONY: up down install initdb backfill train backtest api web seed test \
+.PHONY: up down install initdb backfill collect train evaluate-baseline backtest api web seed test \
         check-phase0 check-phase1 check-phase2 check-phase3 check-phase4 \
+        check-phaseA0 check-phaseA1 check-phaseA2 check-phaseA3 \
         check-phase5 check-phase6 check-phase7 check-phase8 check-phase9 \
         check-phase10 check-phase11 check-phase12
 
@@ -31,8 +32,16 @@ initdb:
 backfill:
 	$(BIN)/python scripts/backfill.py
 
+# The daily forward feed (Phase A1). Point cron at this; it resumes from its
+# own page cache, so re-running after a throttle costs nothing.
+collect:
+	$(BIN)/python scripts/collect_daily.py --once
+
 train:
 	$(BIN)/python scripts/train.py --from 2022-01-01 --promote
+
+evaluate-baseline:
+	$(BIN)/python scripts/evaluate_baseline.py
 
 backtest:
 	$(BIN)/python scripts/backtest.py
@@ -51,6 +60,20 @@ web:
 test:
 	cd backend && ../$(BIN)/python -m pytest
 
+# ── Track A: the model-independent product (see PLAN-NOMODEL.md) ───────────
+check-phaseA0:
+	cd backend && ../$(BIN)/python -m pytest tests/test_phaseA0_port.py -v
+
+check-phaseA1:
+	cd backend && ../$(BIN)/python -m pytest tests/test_phaseA1_collect.py -v
+
+check-phaseA2:
+	cd backend && ../$(BIN)/python -m pytest tests/test_phaseA2_crops.py -v
+
+check-phaseA3:
+	cd backend && ../$(BIN)/python -m pytest tests/test_phaseA3_baseline.py -v
+
+# ── original phase gates ───────────────────────────────────────────────────
 check-phase0:
 	cd backend && ../$(BIN)/python -m pytest tests/test_phase0_scaffold.py -v
 

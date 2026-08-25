@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.config import settings
+from core.config import crop_specs, settings
 from core.db import ping
 
 pytestmark = pytest.mark.phase0
@@ -64,7 +64,13 @@ def test_required_files_exist() -> None:
 def test_config_loads() -> None:
     assert settings.app.horizons == [1, 3, 7, 15]
     assert settings.app.quantiles["p50"] == 0.50
-    assert len(settings.mandis.mandis) == 5
+    # Phase A2 widened this from the Nashik onion belt to four districts and
+    # fourteen crops. Assert the shape the product needs, not the count it
+    # happened to have on the day the test was written — a count is a magic
+    # number that has to be edited every time the config grows.
+    assert len(settings.mandis.mandis) >= 5
+    assert len({m["district"] for m in settings.mandis.mandis}) >= 3
+    assert len(crop_specs()) >= 8
     assert settings.crops.onion.max_hold_days == 20
 
 

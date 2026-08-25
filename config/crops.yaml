@@ -1,7 +1,75 @@
+# Phase A2 — one block per crop. This file is the crop list for the whole system:
+# scripts/init_db.py seeds `commodities` from it, ingestion/datagov.py asks
+# data.gov.in for each crop's FIRST alias, and economics/spoilage.py reads k_c.
+# Adding a crop is a change here and nowhere else.
+#
+# ── the three numbers that decide whether advice is sane ────────────────────
+#
+# shelf_life_days   Ambient, ungraded, farm-gate. The point at which roughly 40%
+#                   of a lot is gone. NOT the supermarket "best before".
+#
+# k_c               The daily spoilage rate in
+#                       spoilage_fraction(d) = 1 - exp(-k_c * d)
+#                   (Phase A5 then adjusts it for storage type and temperature.)
+#
+#                   k_c is NOT hand-typed per crop. It is derived:
+#
+#                       k_c = spoilage_anchor / shelf_life_days
+#
+#                   with spoilage_anchor (0.54) from config/cost_model.yaml, which
+#                   is exactly the onion pair this project already used
+#                   (0.006 x 90). So "shelf life" has
+#                   one meaning across all fourteen crops: 1 - exp(-0.54) = 42%
+#                   of the lot gone. tests/test_phaseA2_crops.py re-derives every
+#                   k_c and fails if one drifts. Change shelf_life_days, not k_c.
+#
+# max_hold_days     The longest hold the decision engine may ever propose. Set at
+#                   roughly a fifth of shelf life, which lands every crop between
+#                   10% and 19% spoilage at the limit — close to the 15% ceiling
+#                   in config/decision.yaml, so the constraint genuinely bites on
+#                   perishables instead of being decorative.
+#
+# perishability_class  Derived from shelf_life_days, not typed:
+#                        1: <= 10 days   2: 11-20   3: 21-45   4: 46-100   5: > 100
+#                      (Onion moved 3 -> 4 under this rule. It stores for three
+#                      months; grouping it with cabbage was the old value's bug.)
+#
+# ── where the shelf lives come from ─────────────────────────────────────────
+# National Horticulture Board ambient storage bands, as summarised in the FAO
+# handling manual: 1-3 months for pomegranate and cabbage; under a month for
+# banana, mango, grape and cauliflower; about a week for brinjal, okra and ripe
+# tomato. ICAR-CIPHET's 2015 loss assessment is the cross-check on magnitude
+# (4.6%-12.4% for vegetables through the whole chain; tomato worst at 12.4%).
+#   SOURCE: https://www.fao.org/4/y4893e/y4893e06.htm
+#   SOURCE: https://www.researchgate.net/publication/289637983
+# These are national ambient figures, not Nashik-in-May figures. They are a
+# defensible starting point, not a measurement — a horticulture reviewer should
+# check them before anyone acts on a hold recommendation.
+#
+# ── aliases ─────────────────────────────────────────────────────────────────
+# The FIRST alias must be data.gov.in's exact commodity spelling — that is the
+# filter value ingestion/datagov.py sends. The rest feed the fuzzy matcher in
+# ingestion/entity_resolution.py, so include the Marathi and the local trade name.
+
+# ══════════════════════════════════════════════════════════════════════════
+# storable — these are the crops where "hold" can be the right answer
+# ══════════════════════════════════════════════════════════════════════════
+
+garlic:
+  aliases: [Garlic, "Garlic Dry", Lehsun, Lasun, लसूण]
+  crop_group: spice
+  perishability_class: 5
+  k_c: 0.0036
+  shelf_life_days: 150
+  max_hold_days: 30
+  msp_applicable: false
+  seasons:
+    rabi: {harvest_start: "02-15", harvest_end: "04-30"}
+
 onion:
   aliases: [Onion, "Onion Red", "Onion(Big)", "Onion Local", Kanda, कांदा]
   crop_group: vegetable
-  perishability_class: 3
+  perishability_class: 4
   k_c: 0.006
   shelf_life_days: 90
   max_hold_days: 20
@@ -9,3 +77,151 @@ onion:
   seasons:
     kharif: {harvest_start: "10-01", harvest_end: "12-15"}
     rabi:   {harvest_start: "03-01", harvest_end: "05-15"}
+
+potato:
+  aliases: [Potato, "Potato Local", Aloo, Batata, बटाटा]
+  crop_group: vegetable
+  perishability_class: 4
+  k_c: 0.0072
+  shelf_life_days: 75
+  max_hold_days: 20
+  msp_applicable: false
+  seasons:
+    rabi: {harvest_start: "01-01", harvest_end: "03-15"}
+
+pomegranate:
+  aliases: [Pomegranate, "Pomegranate Bhagwa", Anar, Dalimb, डाळिंब]
+  crop_group: fruit
+  perishability_class: 4
+  k_c: 0.009
+  shelf_life_days: 60
+  max_hold_days: 15
+  msp_applicable: false
+  seasons:
+    mrig_bahar:  {harvest_start: "11-01", harvest_end: "01-31"}
+    hasth_bahar: {harvest_start: "02-01", harvest_end: "04-30"}
+
+# ══════════════════════════════════════════════════════════════════════════
+# medium — a few days of holding is defensible
+# ══════════════════════════════════════════════════════════════════════════
+
+cabbage:
+  aliases: [Cabbage, "Cabbage Local", Patta Gobhi, Kobi, कोबी]
+  crop_group: vegetable
+  perishability_class: 3
+  k_c: 0.0216
+  shelf_life_days: 25
+  max_hold_days: 6
+  msp_applicable: false
+  seasons:
+    rabi:   {harvest_start: "11-01", harvest_end: "02-28"}
+    kharif: {harvest_start: "08-01", harvest_end: "09-30"}
+
+orange:
+  aliases: [Orange, "Orange Nagpur", Santra, Santra Mosambi, संत्रा]
+  crop_group: fruit
+  perishability_class: 3
+  k_c: 0.0216
+  shelf_life_days: 25
+  max_hold_days: 7
+  msp_applicable: false
+  seasons:
+    ambia_bahar: {harvest_start: "11-01", harvest_end: "01-31"}
+    mrig_bahar:  {harvest_start: "03-01", harvest_end: "05-31"}
+
+grapes:
+  aliases: [Grapes, "Grapes Thompson Seedless", Angoor, Draksh, द्राक्षे]
+  crop_group: fruit
+  perishability_class: 2
+  k_c: 0.03
+  shelf_life_days: 18
+  max_hold_days: 5
+  msp_applicable: false
+  seasons:
+    main: {harvest_start: "01-15", harvest_end: "04-15"}
+
+mango:
+  aliases: [Mango, "Mango Alphonso", "Mango(Raw-Ripe)", Aam, Amba, आंबा]
+  crop_group: fruit
+  perishability_class: 2
+  k_c: 0.045
+  shelf_life_days: 12
+  max_hold_days: 4
+  msp_applicable: false
+  seasons:
+    main: {harvest_start: "03-15", harvest_end: "06-30"}
+
+# ══════════════════════════════════════════════════════════════════════════
+# perishable — for these the honest answer is almost always "sell today"
+# ══════════════════════════════════════════════════════════════════════════
+
+banana:
+  aliases: [Banana, "Banana Ripe", "Banana - Green", Kela, केळी]
+  crop_group: fruit
+  perishability_class: 1
+  k_c: 0.054
+  shelf_life_days: 10
+  max_hold_days: 3
+  msp_applicable: false
+  seasons:
+    mrig:  {harvest_start: "09-01", harvest_end: "11-30"}
+    kande: {harvest_start: "02-01", harvest_end: "04-30"}
+
+cauliflower:
+  aliases: [Cauliflower, "Cauliflower Local", Phool Gobhi, Phulkobi, फुलकोबी]
+  crop_group: vegetable
+  perishability_class: 1
+  k_c: 0.054
+  shelf_life_days: 10
+  max_hold_days: 3
+  msp_applicable: false
+  seasons:
+    rabi: {harvest_start: "10-15", harvest_end: "02-28"}
+
+green_chilli:
+  aliases: ["Green Chilli", "Chilly Capsicum", Hari Mirch, Mirchi, हिरवी मिरची]
+  crop_group: spice
+  perishability_class: 1
+  k_c: 0.054
+  shelf_life_days: 10
+  max_hold_days: 3
+  msp_applicable: false
+  seasons:
+    kharif: {harvest_start: "09-01", harvest_end: "12-31"}
+    summer: {harvest_start: "03-01", harvest_end: "05-31"}
+
+brinjal:
+  aliases: [Brinjal, "Brinjal Local", Baingan, Vangi, वांगी]
+  crop_group: vegetable
+  perishability_class: 1
+  k_c: 0.0675
+  shelf_life_days: 8
+  max_hold_days: 3
+  msp_applicable: false
+  seasons:
+    kharif: {harvest_start: "08-01", harvest_end: "11-30"}
+    rabi:   {harvest_start: "12-01", harvest_end: "03-31"}
+
+tomato:
+  aliases: [Tomato, "Tomato Local", "Tomato Hybrid", Tamatar, टोमॅटो]
+  crop_group: vegetable
+  perishability_class: 1
+  k_c: 0.0675
+  shelf_life_days: 8
+  max_hold_days: 3
+  msp_applicable: false
+  seasons:
+    kharif: {harvest_start: "09-01", harvest_end: "12-31"}
+    summer: {harvest_start: "03-01", harvest_end: "06-15"}
+
+okra:
+  aliases: ["Bhindi(Ladies Finger)", Bhindi, "Lady Finger", Bhendi, भेंडी]
+  crop_group: vegetable
+  perishability_class: 1
+  k_c: 0.09
+  shelf_life_days: 6
+  max_hold_days: 2
+  msp_applicable: false
+  seasons:
+    kharif: {harvest_start: "07-01", harvest_end: "10-31"}
+    summer: {harvest_start: "02-15", harvest_end: "05-31"}

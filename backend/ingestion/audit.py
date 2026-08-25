@@ -3,10 +3,14 @@
 Writes data/artifacts/data_audit.md and prints a rich table. When a judge asks
 "how good is your data?", you open this file instead of guessing.
 
-Verdict per mandi (thresholds in config/sources.yaml -> audit):
+Two grains, same thresholds (config/sources.yaml -> audit):
+    per mandi            — is this market worth keeping at all?
+    per district x crop  — Phase A2's unit, and the one that decides which
+                           crops we forecast and which we only show a price for
+
     USABLE   enough rows AND enough business-day coverage to train on
     THIN     usable only as a neighbour signal; do not headline it
-    UNUSABLE swap it out in config/mandis.yaml and re-run the backfill
+    UNUSABLE too thin — show the price, say we cannot forecast it
 """
 
 from __future__ import annotations
@@ -21,6 +25,8 @@ import pandas as pd
 from rich.console import Console
 from rich.table import Table
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from core import logging as log
 from core.config import settings
@@ -60,15 +66,70 @@ class MandiAudit:
 
 
 @dataclass
+class CropAudit:
+    """One (district x crop) cell — the grain Phase A2 decides the crop list on.
+
+    A mandi-level verdict was the right unit when we had one crop. With fourteen
+    crops across four districts it hides both halves of the truth: Nashik is
+    dense in onion and empty in banana, and reporting "Nashik: USABLE" says
+    neither.
+    """
+
+    district: str
+    commodity_id: int
+    commodity: str
+    rows: int
+    mandis: int
+    first_date: date | None
+    last_date: date | None
+    business_days: int
+    observed_days: int
+    coverage: float
+    imputed_pct: float
+    suspect_pct: float
+    price_min: float | None
+    price_median: float | None
+    price_max: float | None
+    arrival_rows: int
+    verdict: str
+
+    @property
+    def has_arrivals(self) -> bool:
+        """Arrivals are the leading indicator. A crop without them still works,
+        but feature group B degrades — worth seeing before Phase A4 runs."""
+        return self.arrival_rows > 0
+
+
+@dataclass
 class AuditReport:
     generated_at: datetime
     mandis: list[MandiAudit] = field(default_factory=list)
+    crops: list[CropAudit] = field(default_factory=list)
     shock_events: int = 0
     rejections: dict[str, Any] = field(default_factory=dict)
 
     @property
     def usable_mandis(self) -> list[MandiAudit]:
         return [m for m in self.mandis if m.verdict == "USABLE"]
+
+    @property
+    def usable_crops(self) -> list[CropAudit]:
+        return [c for c in self.crops if c.verdict == "USABLE"]
+
+    @property
+    def usable_districts(self) -> list[str]:
+        """Districts with at least one crop we would train on."""
+        return sorted({c.district for c in self.usable_crops})
+
+    @property
+    def forecastable_crops(self) -> list[str]:
+        """Crops USABLE in at least one district.
+
+        This list is the answer to "which crops do we forecast?". Everything
+        else gets its price shown and an honest "not enough history to
+        forecast" — which is the whole point of measuring before committing.
+        """
+        return sorted({c.commodity for c in self.usable_crops})
 
 
 def _verdict(rows: int, coverage: float) -> str:
@@ -112,11 +173,64 @@ def write_rejections(payload: dict[str, Any]) -> Path:
     return REJECTIONS_PATH
 
 
+def collect_crops(conn: Connection) -> list[CropAudit]:
+    """Per (district x crop), straight from the `crop_coverage` view.
+
+    The view is the single definition of coverage, so the audit report and any
+    SQL a human runs by hand cannot disagree about what "500 rows" counted.
+    """
+    try:
+        rows = [dict(r) for r in conn.execute(
+            text(
+                "SELECT * FROM crop_coverage "
+                "ORDER BY district, row_count DESC, commodity"
+            )
+        ).mappings()]
+    except (ProgrammingError, OperationalError) as exc:
+        log.warn(
+            "crop_coverage_missing",
+            error=str(exc)[:200],
+            fix="python scripts/init_db.py --force",
+        )
+        return []
+
+    audits: list[CropAudit] = []
+    for row in rows:
+        first, last = row["first_date"], row["last_date"]
+        business_days = int(len(pd.bdate_range(first, last))) if first and last else 0
+        observed = int(row["observed_days"] or 0)
+        coverage = min(observed / business_days, 1.0) if business_days else 0.0
+        rows_n = int(row["row_count"] or 0)
+        audits.append(
+            CropAudit(
+                district=str(row["district"] or "—"),
+                commodity_id=int(row["commodity_id"]),
+                commodity=str(row["commodity"]),
+                rows=rows_n,
+                mandis=int(row["mandis"] or 0),
+                first_date=first,
+                last_date=last,
+                business_days=business_days,
+                observed_days=observed,
+                coverage=round(coverage, 4),
+                imputed_pct=round(100.0 * int(row["imputed_rows"] or 0) / rows_n, 2) if rows_n else 0.0,
+                suspect_pct=round(100.0 * int(row["suspect_rows"] or 0) / rows_n, 2) if rows_n else 0.0,
+                price_min=_num(row["price_min"]),
+                price_median=_num(row["price_median"]),
+                price_max=_num(row["price_max"]),
+                arrival_rows=int(row["arrival_rows"] or 0),
+                verdict=_verdict(rows_n, coverage),
+            )
+        )
+    return audits
+
+
 def collect() -> AuditReport:
     """Read the database and compute every statistic the report shows."""
     report = AuditReport(generated_at=datetime.now(), rejections=_load_rejections())
 
     with get_conn() as conn:
+        report.crops = collect_crops(conn)
         mandis = [dict(r) for r in conn.execute(
             text("SELECT id, name FROM mandis WHERE active ORDER BY name")
         ).mappings()]
@@ -193,7 +307,7 @@ def collect() -> AuditReport:
 
 def print_table(report: AuditReport, console: Console | None = None) -> None:
     console = console or Console()
-    table = Table(title="Data audit — onion, per mandi", header_style="bold")
+    table = Table(title="Data audit — all crops, per mandi", header_style="bold")
     for column in ("Mandi", "Rows", "From", "To", "Cover", "Imputed", "Suspect",
                    "Max gap", "Price min/med/max", "Arrivals med", "Weather", "Verdict"):
         table.add_column(column, justify="right" if column != "Mandi" else "left")
@@ -229,6 +343,71 @@ def print_table(report: AuditReport, console: Console | None = None) -> None:
         f"shock events loaded: {report.shock_events}   "
         f"usable mandis: {len(report.usable_mandis)}/{len(report.mandis)}"
     )
+
+
+def _crop_section(report: AuditReport) -> list[str]:
+    """The table Phase A2 exists to produce: coverage per (district x crop).
+
+    This is where the crop list stops being a promise and becomes a measurement.
+    We told ourselves twice that the data would be there; the second column of
+    this table is what makes that checkable before anything is built on top.
+    """
+    if not report.crops:
+        return [
+            "",
+            "## Per district × crop",
+            "",
+            "_No `crop_coverage` rows. Either no prices are loaded, or the view is "
+            "missing — run `python scripts/init_db.py --force`, then `make collect`._",
+        ]
+
+    lines = [
+        "",
+        "## Per district × crop",
+        "",
+        "The unit that matters. A district is not USABLE in the abstract — it is "
+        "usable *for a crop*. Anything below USABLE gets its price shown on the site "
+        "with an honest \"not enough history to forecast\", never a faked forecast.",
+        "",
+        "| District | Crop | Rows | Mandis | From | To | Coverage | Imputed | Suspect | "
+        "Modal ₹/qtl min / median / max | Arrivals | Verdict |",
+        "|---|---|---:|---:|---|---|---:|---:|---:|---|---|---|",
+    ]
+    for c in report.crops:
+        price = ("—" if c.price_median is None
+                 else f"{c.price_min:,.0f} / {c.price_median:,.0f} / {c.price_max:,.0f}")
+        lines.append(
+            f"| {c.district} | {c.commodity} | {c.rows:,} | {c.mandis} | "
+            f"{c.first_date or '—'} | {c.last_date or '—'} | {c.coverage:.1%} | "
+            f"{c.imputed_pct:.1f}% | {c.suspect_pct:.1f}% | {price} | "
+            f"{'yes' if c.has_arrivals else '**no**'} | **{c.verdict}** |"
+        )
+
+    configured = sorted(str(k).replace("_", " ").title() for k in settings.crops.to_dict())
+    forecastable = report.forecastable_crops
+    missing = [c for c in configured if c not in forecastable]
+    lines += [
+        "",
+        f"**Forecastable crops ({len(forecastable)}/{len(configured)}):** "
+        + (", ".join(forecastable) if forecastable else "_none yet_"),
+        "",
+        f"**Price-only crops ({len(missing)}):** "
+        + (", ".join(missing) if missing else "_none_")
+        + " — shown with real prices and no forecast, which is the honest thing to do "
+          "with thin history.",
+        "",
+        f"**Districts with at least one usable crop:** {len(report.usable_districts)} "
+        + (f"({', '.join(report.usable_districts)})" if report.usable_districts else ""),
+    ]
+    without_arrivals = [f"{c.district}/{c.commodity}" for c in report.usable_crops
+                        if not c.has_arrivals]
+    if without_arrivals:
+        lines += [
+            "",
+            f"⚠️ Usable but with no arrivals data: {', '.join(without_arrivals)}. "
+            "Feature group B degrades for these — see Phase A4.",
+        ]
+    return lines
 
 
 def _markdown(report: AuditReport) -> str:
@@ -268,6 +447,8 @@ def _markdown(report: AuditReport) -> str:
             f"{m.longest_gap_days} | {price} | {arrivals} | {m.weather_rows:,} | "
             f"**{m.verdict}** |"
         )
+
+    lines += _crop_section(report)
 
     lines += ["", "## Cleaning", ""]
     rejections = report.rejections
@@ -348,6 +529,9 @@ def to_dict(report: AuditReport) -> dict[str, Any]:
         "generated_at": report.generated_at.isoformat(),
         "shock_events": report.shock_events,
         "mandis": [asdict(m) for m in report.mandis],
+        "crops": [asdict(c) for c in report.crops],
+        "forecastable_crops": report.forecastable_crops,
+        "usable_districts": report.usable_districts,
     }
 
 

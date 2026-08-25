@@ -23,3 +23,50 @@ validation:
   purge_days_equal_horizon: true   # purge gap = h days between train end and val start
 
 artifacts_dir: data/artifacts/models
+
+# ── the baseline forecaster (Phase A3) ──────────────────────────────────────
+# Four deliberately stupid predictors. Today they serve the whole product; on
+# swap day they are the opponent LightGBM has to beat before it is promoted.
+baseline:
+  version: baseline-v1
+  seasonal_period: 7        # mandi prices have a weekly rhythm, not an annual one
+  ma_window: 7
+  # A challenger must beat plain naive by this much (relative MAE) before we
+  # switch to it. At the longer horizons the four methods often sit within 1%
+  # of each other, and taking the argmin of four near-tied noisy estimates is
+  # close to picking at random — measured, it made the 'tuned' baseline worse
+  # than naive at two of four horizons. The benchmark holds the floor.
+  switch_margin: 0.02
+  # Below this many observations for a (crop, mandi) we raise InsufficientData
+  # rather than extrapolate. A forecast built on three prices is not a forecast.
+  min_history_days: 30
+  # Bands are the empirical 10th/90th percentiles of the chosen method's own
+  # past errors at that horizon. Below this many residuals the percentiles are
+  # noise, so we fall back to a deliberately wide relative band instead.
+  min_residuals: 8
+  # Fallback half-width as a fraction of the median, widened by sqrt(h). Wide on
+  # purpose: a thin-history crop SHOULD look uncertain, and a narrow band there
+  # is the exact failure that puts a confident wrong number on a farmer's screen.
+  fallback_band_pct: 0.18
+  # Small samples understate tails: the empirical 10th percentile of thirty
+  # residuals is systematically closer to the median than the true 10th is.
+  # So we quote a one-sided confidence bound on the tail instead of the point
+  # estimate, at this many standard errors (1.28 ~ 90% one-sided). The
+  # conservatism shrinks as evidence accumulates, which is the point: a crop
+  # with thirty days of history must not look as certain as one with four
+  # hundred, and without this it looked MORE certain.
+  tail_confidence_z: 1.28
+  # A band narrower than this is almost certainly an artefact of too few, too
+  # similar residuals. Floors it so the decision engine always prices some risk.
+  min_band_pct: 0.02
+
+# ── which forecaster is live (Phase A0) ─────────────────────────────────────
+# This single line is swap day. Everything downstream reaches a forecast through
+# ml.provider.get_provider(), so promoting the trained model changes nothing else.
+#   baseline  — seasonal-naive + empirical error bands (Phase A3)
+#   lightgbm  — the trained quantile model (Phase B2)
+provider: baseline
+
+providers:
+  baseline: ml.baseline_provider:BaselineProvider
+  lightgbm: ml.lgbm_provider:LgbmProvider

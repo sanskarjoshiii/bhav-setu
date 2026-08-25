@@ -169,3 +169,23 @@ def _build() -> Settings:
 
 
 settings: Settings = _build()
+
+
+def crop_specs() -> dict[str, dict[str, Any]]:
+    """Every crop in config/crops.yaml, as plain dicts.
+
+    One place that knows how to read that file, because three callers need it —
+    scripts/init_db.py seeds `commodities` from it, ingestion/datagov.py builds
+    the API's commodity filter from it, and economics/spoilage.py reads k_c.
+    Three copies of the same loop is three chances to disagree about what counts
+    as a crop.
+
+    Keys starting with "_" are reserved for non-crop settings and are skipped,
+    so a future constant added to that file cannot be seeded as a vegetable.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    for name, spec in settings.crops.to_dict().items():
+        if str(name).startswith("_"):
+            continue
+        out[str(name)] = spec.to_dict() if hasattr(spec, "to_dict") else dict(spec)
+    return out

@@ -45,3 +45,19 @@ class FeatureSetMismatch(BhavSetuError):
     Raised loudly because a model trained on one column order and served on
     another fails silently — it just gets quietly worse.
     """
+
+
+class ProviderNotAvailable(BhavSetuError):
+    """config/model.yaml names a forecast provider that is not built or importable.
+
+    Phase A0 registers 'lightgbm' before it exists on purpose, so that the day
+    the model lands the only change is the `provider:` line.
+    """
+
+
+class ForecastContractError(BhavSetuError):
+    """A ForecastProvider returned something that violates ml/port.py.
+
+    Unsorted quantiles, a missing horizon, a non-finite price. Loud on purpose:
+    every one of these is silent everywhere downstream.
+    """

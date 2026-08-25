@@ -27,7 +27,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
 from core import logging as log
-from core.config import settings
+from core.config import crop_specs, settings
 from core.db import get_conn
 from core.errors import ConfigError
 
@@ -163,11 +163,14 @@ def seed_mandis(conn: Connection) -> int:
 
 def seed_commodities(conn: Connection) -> tuple[int, int]:
     """One row per crop in config/crops.yaml, plus its aliases."""
-    crops = settings.crops.to_dict()
+    crops = crop_specs()
     n_commodities = 0
     n_aliases = 0
-    for crop_name, raw_spec in crops.items():
-        spec = raw_spec.to_dict() if hasattr(raw_spec, "to_dict") else dict(raw_spec)
+    for crop_name, spec in crops.items():
+        # "green_chilli" -> "Green Chilli". The display name reaches the audit
+        # report, the API and a farmer's screen, so it may not carry our
+        # internal key's underscore.
+        display_name = crop_name.replace("_", " ").title()
         commodity_id = conn.execute(
             text(
                 """
@@ -184,7 +187,7 @@ def seed_commodities(conn: Connection) -> tuple[int, int]:
                 """
             ),
             {
-                "name": crop_name.capitalize(),
+                "name": display_name,
                 "variety": "",
                 "crop_group": spec.get("crop_group"),
                 "perishability_class": spec.get("perishability_class"),
@@ -195,7 +198,7 @@ def seed_commodities(conn: Connection) -> tuple[int, int]:
         n_commodities += 1
 
         aliases = list(spec.get("aliases", []))
-        aliases.append(crop_name.capitalize())
+        aliases.append(display_name)
         for alias in dict.fromkeys(aliases):          # de-dupe, keep order
             conn.execute(
                 text(
@@ -247,10 +250,9 @@ def seed_festivals(conn: Connection) -> int:
 def seed_msp(conn: Connection) -> int:
     """Onion has no MSP. Nothing is inserted — but the caller must not treat that
     as a failure, and downstream MSP checks must handle 'not applicable' cleanly."""
-    crops = settings.crops.to_dict()
     applicable = [
-        name for name, spec in crops.items()
-        if bool((spec.to_dict() if hasattr(spec, "to_dict") else spec).get("msp_applicable", False))
+        name for name, spec in crop_specs().items()
+        if bool(spec.get("msp_applicable", False))
     ]
     log.info("seeded", table="msp_schedule", rows=0, msp_applicable_crops=applicable or "none")
     return 0
