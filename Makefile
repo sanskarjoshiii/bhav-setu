@@ -6,7 +6,8 @@ else
 	BIN := $(VENV)/bin
 endif
 
-.PHONY: up down install initdb backfill collect train evaluate-baseline backtest api web seed test \
+.PHONY: up down install initdb backfill collect train train-dry evaluate-baseline backtest api web seed test \
+        check-data check-data-csv build-dataset check-phaseB2 \
         check-phase0 check-phase1 check-phase2 check-phase3 check-phase4 \
         check-phaseA0 check-phaseA1 check-phaseA2 check-phaseA3 \
         check-phase5 check-phase6 check-phase7 check-phase8 check-phase9 \
@@ -37,8 +38,31 @@ backfill:
 collect:
 	$(BIN)/python scripts/collect_daily.py --once
 
+# Before anything else in the model track: how far is the data from trainable?
+# Works with Postgres down (--csv), so there is no excuse not to run it.
+check-data:
+	$(BIN)/python scripts/check_data_readiness.py
+
+check-data-csv:
+	$(BIN)/python scripts/check_data_readiness.py --csv --verbose
+
+# Phase B1 — build the matrix and refuse to write a bad one.
+build-dataset:
+	$(BIN)/python scripts/build_dataset.py --from 2022-01-01
+
+# Phase B2/B3 — train, score, then run the promotion gate. Note: this only
+# promotes if the model beats the recorded baseline, so `make evaluate-baseline`
+# has to have run at least once or the gate refuses outright.
 train:
 	$(BIN)/python scripts/train.py --from 2022-01-01 --promote
+
+# Same, without touching model_registry or the artifacts dir.
+train-dry:
+	$(BIN)/python scripts/train.py --from 2022-01-01 --dry-run
+
+# Swap day's gate: the SAME contract file the baseline passed, unmodified.
+check-phaseB2:
+	cd backend && ../$(BIN)/python -m pytest tests/test_phaseA0_port.py --provider lightgbm -v
 
 evaluate-baseline:
 	$(BIN)/python scripts/evaluate_baseline.py

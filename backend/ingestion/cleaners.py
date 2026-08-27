@@ -119,6 +119,37 @@ def reject_absurd(series: pd.DataFrame) -> pd.Series:
     return (modal > ABSURD_MULTIPLE * trailing) & trailing.notna()
 
 
+def reject_collapsed(series: pd.DataFrame) -> pd.Series:
+    """modal < the trailing 90-day median / 20 — the downward twin of reject_absurd.
+
+    `reject_absurd` deliberately only looks upward, because a tripling onion
+    price is real and winsorising it would delete the exact event we exist to
+    predict. But that asymmetry let the opposite error through untouched, and it
+    is not the same kind of number: a crop does not lose 99.9% of its value
+    overnight. Measured on the CEDA pull, this let grapes through at ₹11/quintal
+    against a ₹6,000 median — eleven paise a kilo — along with potato at ₹12 and
+    okra at ₹18. 394 rows, 0.22% of the matrix.
+
+    They were invisible in pinball loss (a few rupees of absolute error) and
+    devastating in MAPE, which divides by the truth: one row at ₹11 predicted as
+    ₹1,200 contributes a 10,800% error on its own. That single defect pushed
+    h=3 MAPE from the mid-teens to 44% and non-monotonic across horizons, which
+    is what exposed it.
+
+    Rejecting downward is safe in a way that rejecting upward would not be,
+    because the floor is the *trailing* median: a genuine seasonal glut halves a
+    price over weeks and drags the median with it. Only a one-day cliff trips
+    this.
+    """
+    modal = pd.to_numeric(series["modal_price"], errors="coerce")
+    trailing = (
+        modal.shift(1)
+        .rolling(TRAILING_MEDIAN_WINDOW, min_periods=10)
+        .median()
+    )
+    return (modal < trailing / ABSURD_MULTIPLE) & trailing.notna()
+
+
 def flag_suspect(series: pd.DataFrame) -> pd.Series:
     """Rolling z-score of the daily log-return above 6 — keep it, but mark it.
 
@@ -249,6 +280,12 @@ def clean_frame(df: pd.DataFrame) -> tuple[pd.DataFrame, CleaningReport]:
         if n_absurd:
             report.rejected["reject_absurd"] += n_absurd
             series = series[~absurd].reset_index(drop=True)
+
+        collapsed = reject_collapsed(series)
+        n_collapsed = int(collapsed.sum())
+        if n_collapsed:
+            report.rejected["reject_collapsed"] += n_collapsed
+            series = series[~collapsed].reset_index(drop=True)
 
         series["suspect"] = flag_suspect(series).fillna(False)
         series["is_imputed"] = False

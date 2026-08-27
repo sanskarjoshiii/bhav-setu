@@ -114,6 +114,73 @@ ceda:
     arrival: quintal
   date_format: "%Y-%m-%d"
 
+  # ── the catalogue, discovered by probing the live API (27 Aug 2026) ───────
+  # CEDA echoes the commodity name back in every response, so these ids were
+  # enumerated by asking for a monthly series and reading `cmdty` off the reply
+  # rather than guessed. Verified against district 521 (Pune), which carries the
+  # widest fruit-and-vegetable trade in the state.
+  #
+  # Left = our crop key in config/crops.yaml. Right = CEDA's commodity_id.
+  # Crops marked (bonus) are not in crops.yaml yet — they cost nothing extra to
+  # pull and give the global model more rows to borrow strength from.
+  commodities:
+    # our 14 configured crops
+    onion: 23
+    potato: 24
+    garlic: 25
+    tomato: 78
+    brinjal: 35
+    cauliflower: 34
+    green_chilli: 87
+    okra: 85            # CEDA calls it "Bhindi (Ladies Finger)"
+    banana: 19
+    mango: 20
+    grapes: 22
+    orange: 18
+    pomegranate: 190
+    # cabbage: not carried by CEDA under any id we could find — left out rather
+    # than mapped to something close. A wrong mapping is worse than a gap.
+
+    # bonus rows for the global model (all dense in Pune)
+    apple: 17           # (bonus)
+    pineapple: 21       # (bonus)
+    papaya: 72          # (bonus)
+    water_melon: 73     # (bonus)
+    chikoo: 71          # (bonus)
+    guava: 185          # (bonus)
+    musk_melon: 187     # (bonus)
+    bitter_gourd: 81    # (bonus)
+    bottle_gourd: 82    # (bonus)
+    pumpkin: 84         # (bonus)
+    beans: 94           # (bonus)
+    green_peas: 50      # (bonus)
+    ginger_green: 103   # (bonus)
+    coriander_leaves: 43  # (bonus)
+    methi_leaves: 46    # (bonus)
+
+  # ── Maharashtra districts (state_id 27), also probed live ────────────────
+  # CEDA is DISTRICT granularity, not market: each row is the district's daily
+  # aggregate across its market yards. One (district, crop) pair is therefore
+  # one series, and the district name is used as the mandi name so it lines up
+  # with the entries already in config/mandis.yaml.
+  districts:
+    Pune: 521           # widest crop list — 52 commodities, the anchor district
+    Nashik: 516
+    Ahmadnagar: 522
+    Solapur: 526
+    Kolhapur: 530
+    Sangli: 531
+    Satara: 527
+    Aurangabad: 515
+    Nagpur: 505
+    Mumbai: 519
+    Thane: 517
+    Amravati: 503
+    Buldana: 500
+    Chandrapur: 509
+    Osmanabad: 525
+    Raigarh: 520
+
 csv_backfill:
   # Written by scripts/merge_ceda_csv.py, which joins CEDA's separate price and
   # quantity exports into one row per market per day.

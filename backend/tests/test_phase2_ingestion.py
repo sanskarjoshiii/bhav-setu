@@ -262,14 +262,22 @@ def test_imputed_runs_never_exceed_the_configured_gap() -> None:
     """A forward-fill longer than 3 business days would be inventing prices."""
     longest = scalar(
         """
+        -- Partition by (mandi, commodity): imputation runs per SERIES, and a
+        -- run only means anything inside one. Grouping by mandi alone was fine
+        -- when the database held a single crop, but with thirteen interleaved
+        -- on the same dates the gaps-and-islands trick stitches unrelated crops
+        -- into one phantom run — it reported 17 where the longest real run is 3.
         WITH flagged AS (
-            SELECT mandi_id, obs_date, is_imputed,
-                   row_number() OVER (PARTITION BY mandi_id ORDER BY obs_date)
-                 - row_number() OVER (PARTITION BY mandi_id, is_imputed ORDER BY obs_date) AS grp
+            SELECT mandi_id, commodity_id, obs_date, is_imputed,
+                   row_number() OVER (PARTITION BY mandi_id, commodity_id
+                                      ORDER BY obs_date)
+                 - row_number() OVER (PARTITION BY mandi_id, commodity_id, is_imputed
+                                      ORDER BY obs_date) AS grp
             FROM price_observations
         )
         SELECT coalesce(max(n), 0) FROM (
-            SELECT count(*) AS n FROM flagged WHERE is_imputed GROUP BY mandi_id, grp
+            SELECT count(*) AS n FROM flagged WHERE is_imputed
+            GROUP BY mandi_id, commodity_id, grp
         ) runs
         """
     )

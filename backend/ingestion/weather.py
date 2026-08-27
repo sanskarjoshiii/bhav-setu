@@ -36,6 +36,15 @@ TIMEOUT: float = float(settings.sources.ingestion.http_timeout_seconds)
 ATTEMPTS: int = int(settings.sources.agmarknet.retry.attempts)
 BACKOFF: list[float] = [float(s) for s in settings.sources.agmarknet.retry.backoff_seconds]
 
+#: Seconds to wait out an Open-Meteo 429. Their limit resets on the minute, so
+#: anything under 60 just burns an attempt inside the same window.
+RATE_LIMIT_COOLDOWN: float = 65.0
+
+#: Breathing room between mandis. Cheap insurance: seventeen mandis at two calls
+#: each is well inside the daily budget, and it is only the per-minute one we
+#: keep tripping.
+PAUSE_BETWEEN_MANDIS: float = 2.0
+
 
 @dataclass
 class WeatherResult:
@@ -82,6 +91,16 @@ def _get_json(url: str, params: dict[str, Any]) -> dict[str, Any]:
                 if response.status_code == 200:
                     return payload
                 last_error = IngestionError(f"HTTP {response.status_code}: {response.text[:200]}")
+                # 429 here is Open-Meteo's *minutely* budget, not a ban. Their
+                # archive endpoint prices a request by days x variables, and a
+                # five-year window for seventeen mandis spends it in about
+                # thirteen calls. The standard [1,2,4,8] backoff is far too
+                # short — every retry lands inside the same minute and fails
+                # again, which is how a transient limit turned into a failed
+                # step. Wait out the window instead.
+                if response.status_code == 429:
+                    time.sleep(RATE_LIMIT_COOLDOWN)
+                    continue
             except httpx.HTTPError as exc:
                 log.external_call(url, "network_error", rows=None, attempt=attempt + 1, error=str(exc))
                 last_error = exc
@@ -180,6 +199,7 @@ def run(start: date | None = None, end: date | None = None,
             result.mandis += 1
             log.info("weather_mandi_done", mandi=mandi["name"],
                      historical=len(rows), forecast=len(frows))
+            time.sleep(PAUSE_BETWEEN_MANDIS)
 
     if counters is not None:
         counters.rows_in = result.historical_rows + result.forecast_rows

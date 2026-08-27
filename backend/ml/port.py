@@ -38,6 +38,22 @@ DEFAULT_HORIZONS: tuple[int, ...] = tuple(int(h) for h in settings.app.horizons)
 MIN_PLAUSIBLE_PRICE: float = 1.0
 MAX_PLAUSIBLE_PRICE: float = 1_000_000.0
 
+# The model predicts a LOG RETURN, not a price. This is the one place that is
+# undone — the trainer scores through it and the provider serves through it, so
+# a metric measured in training and a number shown to a farmer cannot drift
+# apart. A return beyond this is a broken booster, not a market: exp(1.5) is a
+# 4.5x move, which real onion spikes reach and nothing sane passes.
+MAX_ABS_LOG_RETURN: float = 1.5
+
+
+def to_price(price_now: float, log_return: float) -> float:
+    """Turn a predicted log return into a price in ₹/quintal."""
+    value = float(log_return)
+    if not math.isfinite(value) or not math.isfinite(price_now):
+        return float("nan")
+    clamped = max(-MAX_ABS_LOG_RETURN, min(MAX_ABS_LOG_RETURN, value))
+    return float(price_now * math.exp(clamped))
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # what a forecast is

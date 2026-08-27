@@ -72,12 +72,15 @@ class StubProvider:
     name = "stub"
     version = "stub-v1"
 
-    #: (commodity_id, mandi_id) -> a plausible ₹/quintal base price
+    #: (commodity_id, mandi_id) -> a plausible ₹/quintal base price.
+    #: Keys must cover every entry in CASES, so the stub and a real provider are
+    #: asked exactly the same questions.
     KNOWN: dict[tuple[int, int], float] = {
-        (1, 1): 1860.0,
-        (1, 2): 1795.0,
-        (2, 1): 1240.0,
-        (2, 2): 2310.0,
+        (2, 6): 1240.0,     # onion @ Pune
+        (2, 3): 1180.0,     # onion @ Nashik
+        (3, 14): 1460.0,    # potato @ Ahmednagar
+        (13, 11): 1175.0,   # tomato @ Solapur
+        (12, 6): 2430.0,    # brinjal @ Pune
     }
 
     def _base(self, commodity_id: int, mandi_id: int, as_of: date) -> float:
@@ -164,13 +167,26 @@ class BarelyWideningProvider(StubProvider):
         return validate_forecast(result, horizons)
 
 
+#: The cases `--provider <name>` is probed against on real data.
+#:
+#: These point at mandis that actually carry history. CEDA serves district-level
+#: series, so the four loaded "mandis" are the district aggregates — Nashik 3,
+#: Pune 6, Solapur 11, Ahmednagar 14 — and the market-level entries in
+#: config/mandis.yaml (Lasalgaon, Pimpalgaon, …) hold no rows. The original
+#: cases pointed at Lasalgaon and so skipped with "no data for the probe cases",
+#: which the suite is careful to call out as *not a pass*. A gate that cannot
+#: reach any data is not a gate.
+#:
+#: Commodity ids come from config/crops.yaml via scripts/init_db.py:
+#: 2 onion, 3 potato, 13 tomato, 12 brinjal.
 CASES: list[ProbeCase] = [
-    ProbeCase(1, 1, date(2024, 3, 14), "onion @ Lasalgaon"),
-    ProbeCase(1, 2, date(2024, 3, 14), "onion @ Pimpalgaon"),
-    ProbeCase(2, 1, date(2024, 7, 2), "potato @ Lasalgaon"),
-    ProbeCase(2, 2, date(2024, 11, 9), "potato @ Pimpalgaon"),
+    ProbeCase(2, 6, date(2025, 3, 14), "onion @ Pune"),
+    ProbeCase(2, 3, date(2025, 3, 14), "onion @ Nashik"),
+    ProbeCase(3, 14, date(2025, 7, 2), "potato @ Ahmednagar"),
+    ProbeCase(13, 11, date(2025, 6, 9), "tomato @ Solapur"),
+    ProbeCase(12, 6, date(2025, 8, 11), "brinjal @ Pune"),
 ]
-UNKNOWN = ProbeCase(-1, -1, date(2024, 3, 14), "a crop we have never heard of")
+UNKNOWN = ProbeCase(-1, -1, date(2025, 3, 14), "a crop we have never heard of")
 
 
 @pytest.fixture
@@ -302,7 +318,10 @@ def test_contract_catches_a_provider_that_answers_when_it_should_not():
 
 
 def test_stub_bands_widen_with_horizon():
-    result = StubProvider().predict_quantiles(1, 1, date(2024, 3, 14), DEFAULT_HORIZONS)
+    probe = CASES[0]
+    result = StubProvider().predict_quantiles(
+        probe.commodity_id, probe.mandi_id, probe.as_of, DEFAULT_HORIZONS
+    )
     widths = [result[h].relative_width for h in sorted(result)]
     assert widths == sorted(widths)
 
